@@ -1,5 +1,7 @@
 import streamlit as st
 from groq import Groq
+from gtts import gTTS
+import os
 
 # Configuración de Dex
 st.set_page_config(page_title="Dex Engine", page_icon="⚡")
@@ -36,4 +38,10 @@ if prompt := st.chat_input("¿Cuáles son tus órdenes, David?"):
             stream=True,
         )
         response = st.write_stream((chunk.choices[0].delta.content or "" for chunk in stream))
+        
+        # Generar voz profesional
+        tts = gTTS(text=response, lang='es', slow=False)
+        tts.save("dex_voz.mp3")
+        st.audio("dex_voz.mp3")
+        
     st.session_state.messages.append({"role": "assistant", "content": response})
