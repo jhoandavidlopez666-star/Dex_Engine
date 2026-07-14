@@ -1,3 +1,12 @@
+import subprocess
+import sys
+
+# Instalación forzada de gTTS si no existe
+try:
+    import gtts
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "gTTS"])
+
 import streamlit as st
 from groq import Groq
 from gtts import gTTS
