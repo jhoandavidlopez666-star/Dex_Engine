@@ -1,3 +1,2 @@
-streamlit
-groq
-pyttsx3
+# Usamos 'es' (España) que suena un poco más natural que 'es-us'
+tts = gTTS(text=response, lang='es', slow=False, tld='es')
