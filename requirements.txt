@@ -1,3 +1,2 @@
-streamlit
-groq
-gTTS
+# Cambia esta línea:
+tts = gTTS(text=response, lang='es-es', slow=False)
