@@ -1,2 +1,3 @@
-# Cambia esta línea:
-tts = gTTS(text=response, lang='es-es', slow=False)
+streamlit
+groq
+pyttsx3
