@@ -11,25 +11,32 @@ if not os.path.exists(ARCHIVO_MEMORIA):
 
 st.set_page_config(page_title="Dex", layout="centered")
 
-# --- 2. LÓGICA DE RESPUESTA ---
+# --- 2. LÓGICA DE ANALISTA ---
 def obtener_respuesta(prompt):
-    with open(ARCHIVO_MEMORIA, "r") as f: memoria = json.load(f)
-    if "cómo te llamas" in prompt.lower(): return "Soy Dex."
-    if "quién te creó" in prompt.lower(): return f"Mi Arquitecto es {memoria['creador']}."
-    return f"He recibido tu orden, {prompt}."
+    # Esto es lo que Dex "piensa". No repite tu pregunta.
+    p = prompt.lower()
+    
+    if "cómo te llamas" in p: 
+        return "Mi nombre es Dex."
+    if "quién te creó" in p: 
+        with open(ARCHIVO_MEMORIA, "r") as f: memoria = json.load(f)
+        return f"Fui creada por {memoria['creador']}."
+    if "hola" in p:
+        return "Hola. Estoy lista para tus órdenes."
+        
+    return "Orden registrada y procesada."
 
-# --- 3. INTERFAZ Y VOZ NATIVA ---
-# Esfera que cambia de color cuando recibe texto
-color = "#00FF7F" if "respuesta" in st.session_state else "#FFD700"
+# --- 3. INTERFAZ Y VOZ ---
+# Esfera visual
 st.markdown(f"""
 <div style="display: flex; justify-content: center; margin-top: 50px;">
-    <img src="{IMAGEN_BASE64}" style="width: 350px; height: 350px; border-radius: 50%; border: 8px solid {color}; box-shadow: 0 0 50px {color}; transition: all 0.5s;">
+    <img src="{IMAGEN_BASE64}" style="width: 350px; height: 350px; border-radius: 50%; border: 8px solid #FFD700; box-shadow: 0 0 50px #FFD700;">
 </div>
 """, unsafe_allow_html=True)
 
-# JavaScript para hablar usando la voz nativa del sistema
-if "respuesta" in st.session_state:
-    texto = st.session_state.respuesta
+# Motor de voz nativo (sin repetir tu pregunta)
+if "respuesta_dex" in st.session_state:
+    texto = st.session_state.respuesta_dex
     js_code = f"""
     <script>
         var msg = new SpeechSynthesisUtterance("{texto}");
@@ -38,13 +45,14 @@ if "respuesta" in st.session_state:
     </script>
     """
     st.components.v1.html(js_code, height=0)
-    del st.session_state.respuesta
+    del st.session_state.respuesta_dex # Limpiamos para que no repita al refrescar
 
-# Entrada invisible que ejecuta la voz
+# Procesador de comandos
 def procesar():
     prompt = st.session_state.input_dex
     if prompt:
-        st.session_state.respuesta = obtener_respuesta(prompt)
+        # Solo enviamos el resultado de la función, NO el prompt del usuario
+        st.session_state.respuesta_dex = obtener_respuesta(prompt)
         st.session_state.input_dex = ""
 
 st.text_input("Comando:", key="input_dex", on_change=procesar, label_visibility="collapsed")
