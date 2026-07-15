@@ -1,46 +1,46 @@
 import streamlit as st
 import requests
 from groq import Groq
-import autenticador
 
-# --- CONFIGURACIÓN ---
+# 1. Configuración
 URL_MACRODROID = "https://trigger.macrodroid.com/c5b99e55-87f6-4b97-a4bd-82fab9fac120/dex_comando"
 client = Groq(api_key=st.secrets.get("GROQ_API_KEY"))
 
 st.title("Centro de Mando: Dex")
-st.markdown('<div class="esfera-contenedor"><div class="esfera"></div></div>', unsafe_allow_html=True)
 
-if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "system", "content": "Eres Dex, la IA estratégica creada por David López."}]
+# Esfera fija (CSS directo para que no falle)
+st.markdown("""
+<style>
+.esfera { width: 100px; height: 100px; background: radial-gradient(circle, #00f, #000); border-radius: 50%; margin: 20px auto; }
+</style>
+<div class="esfera"></div>
+""", unsafe_allow_html=True)
 
-# --- INTERACCIÓN ---
+# 2. Lógica de Mando
 if prompt := st.chat_input("Dime tu orden..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.write(f"Orden: {prompt}")
     
-    # 1. ¿Es una orden de ejecutar app?
+    # ¿Es apertura?
     if "abre" in prompt.lower() or "abrir" in prompt.lower():
-        respuesta_final = "Ejecutando orden en tu dispositivo."
         try:
-            # Enviamos el disparo a MacroDroid
             requests.get(URL_MACRODROID, timeout=5)
+            respuesta = "Ejecutando apertura."
         except:
-            respuesta_final = "Error crítico de conexión con el dispositivo."
+            respuesta = "Error de conexión con el móvil."
     else:
-        # 2. Es consulta de IA
+        # IA normal
         response = client.chat.completions.create(
-            messages=st.session_state.messages, 
+            messages=[{"role": "user", "content": prompt}], 
             model="llama-3.1-8b-instant"
         )
-        respuesta_final = response.choices[0].message.content
-        st.session_state.messages.append({"role": "assistant", "content": respuesta_final})
-        st.write(respuesta_final)
+        respuesta = response.choices[0].message.content
+        st.write(f"Dex: {respuesta}")
 
-    # 3. VOZ FORZADA (El sistema SIEMPRE hablará)
-    js_code = f"""<script>
-        var msg = new SpeechSynthesisUtterance("{respuesta_final.replace('"', '').replace(chr(10), ' ')}");
-        msg.lang = 'es-ES'; 
-        msg.rate = 1.1; 
+    # 3. Voz forzada
+    st.components.v1.html(f"""
+    <script>
+        var msg = new SpeechSynthesisUtterance("{respuesta.replace('"', '')}");
+        msg.lang = 'es-ES';
         window.speechSynthesis.speak(msg);
-    </script>"""
-    st.components.v1.html(js_code, height=0)
-    st.rerun()
+    </script>
+    """, height=0)
