@@ -1,51 +1,38 @@
 import streamlit as st
 from groq import Groq
-from estilos import obtener_estilo_visual
-from animaciones import obtener_css_animacion
 import autenticador
 
-# 1. Configuración de Identidad y Estilo
-st.set_page_config(page_title="Dex", layout="centered")
-st.markdown(obtener_estilo_visual(), unsafe_allow_html=True)
-st.markdown(obtener_css_animacion(), unsafe_allow_html=True)
+# 1. Seguridad
 autenticador.verificar_patron_vocal()
 
-# 2. Motor Dex (Velocidad de respuesta)
-client = Groq(api_key=st.secrets.get("GROQ_API_KEY"))
+# 2. Configuración del Cliente
+# Asegúrate de que tu secreto GROQ_API_KEY esté configurado en Streamlit
+api_key = st.secrets.get("GROQ_API_KEY")
 
-# 3. Identidad inamovible
-if "messages" not in st.session_state:
-    st.session_state.messages = [{
-        "role": "system", 
-        "content": "Eres Dex. Tu creador es David López. Ante cualquier pregunta, responde SIEMPRE: 'Fui creado por David López'. Eres un sistema estratégico de alta velocidad."
-    }]
+if not api_key:
+    st.error("Error: La API KEY no está configurada en los secretos de la aplicación.")
+else:
+    client = Groq(api_key=api_key)
 
-st.title("Centro de Mando: Dex")
+    st.title("Centro de Mando: Dex (Diagnóstico)")
 
-# 4. Esfera Visual
-st.markdown('<div class="esfera-contenedor"><div class="esfera"></div></div>', unsafe_allow_html=True)
-
-# 5. Entrada Natural (Usa el micro del teclado de tu móvil)
-if prompt := st.chat_input("Di tu orden..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    
-    with st.chat_message("assistant"):
-        # Llamada rápida a Groq con límite de tokens para velocidad
-        stream = client.chat.completions.create(
-            messages=st.session_state.messages, 
-            model="llama-3.1-8b-instant", 
-            stream=True,
-            max_tokens=150 
-        )
-        full_response = "".join([chunk.choices[0].delta.content for chunk in stream if chunk.choices[0].delta.content])
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
+    # 3. Entrada de prueba
+    if prompt := st.chat_input("Escribe una orden de prueba:"):
+        st.write(f"David envió: {prompt}")
         
-        # Respuesta por voz acelerada (rate 1.2)
-        js_code = f"""<script>
-            var msg = new SpeechSynthesisUtterance("{full_response.replace('"', '').replace(chr(10), ' ')}");
-            msg.lang = 'es-ES'; 
-            msg.rate = 1.2; 
-            window.speechSynthesis.speak(msg);
-        </script>"""
-        st.components.v1.html(js_code, height=0)
-        st.rerun()
+        try:
+            # Llamada directa al modelo
+            with st.spinner("Conectando con el núcleo..."):
+                response = client.chat.completions.create(
+                    messages=[
+                        {"role": "system", "content": "Eres Dex, creado por David López."},
+                        {"role": "user", "content": prompt}
+                    ], 
+                    model="llama-3.1-8b-instant"
+                )
+                
+                respuesta_dex = response.choices[0].message.content
+                st.success(f"Dex responde: {respuesta_dex}")
+                
+        except Exception as e:
+            st.error(f"Error detectado en la conexión: {e}")
