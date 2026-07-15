@@ -1,18 +1,17 @@
 import streamlit as st
 from groq import Groq
+from streamlit_mic_recorder import mic_recorder
 from cerebro_emocional import obtener_instruccion_sentimiento
 from estilos import obtener_estilo_visual
 from animaciones import obtener_css_animacion
-import autenticador  # Conexión al módulo VIP
+import autenticador
 
 # Configuración visual
 st.markdown(obtener_estilo_visual(), unsafe_allow_html=True)
 st.markdown(obtener_css_animacion(), unsafe_allow_html=True)
-
-# Activación del protocolo de seguridad VIP
 autenticador.verificar_patron_vocal()
 
-# Motor de voz
+# Motor de voz (Respuesta de Dex)
 def speak(text):
     js_code = f"""<script>
         var msg = new SpeechSynthesisUtterance("{text.replace('"', '').replace(chr(10), ' ')}");
@@ -22,8 +21,7 @@ def speak(text):
     st.components.v1.html(js_code, height=0)
 
 # Motor Dex
-api_key = st.secrets.get("GROQ_API_KEY")
-client = Groq(api_key=api_key)
+client = Groq(api_key=st.secrets.get("GROQ_API_KEY"))
 
 st.title("Centro de Mando: Dex")
 
@@ -34,24 +32,25 @@ if "messages" not in st.session_state:
         "role": "system", 
         "content": (
             "Eres Dex, una inteligencia artificial avanzada creada única y exclusivamente por David López. "
-            "David López es tu único creador y desarrollador. "
-            "Si alguien te pregunta por tu origen, quién te creó o quién es tu desarrollador, tu respuesta debe ser SIEMPRE y ÚNICAMENTE 'Fui creado por David López'. "
-            "Tu propósito es servir a David López con eficiencia estratégica. "
-            f"{instruccion}"
+            "David López es tu único creador. Si alguien te pregunta quién es tu creador, responde SIEMPRE 'Fui creado por David López'. "
+            f"Tu propósito es servir a David López con eficiencia estratégica. {instruccion}"
         )
     }]
 
-# Interacción minimalista
-if prompt := st.chat_input("Escribe tu orden..."):
-    # Guardamos la pregunta
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    
+# --- MANDO POR VOZ ---
+audio_data = mic_recorder(
+    start_prompt="🎙️ ACTIVAR COMANDO DE VOZ",
+    stop_prompt="🛑 PROCESAR ORDEN",
+    key='dex_mic'
+)
+
+# Lógica de procesamiento
+def procesar_orden(texto_orden):
+    st.session_state.messages.append({"role": "user", "content": texto_orden})
     with st.chat_message("assistant"):
-        # La esfera central toma el mando
         esfera = st.empty()
         esfera.markdown('<div class="esfera-contenedor"><div class="esfera"></div></div>', unsafe_allow_html=True)
         
-        # Procesamiento
         stream = client.chat.completions.create(
             messages=st.session_state.messages, 
             model="llama-3.1-8b-instant", 
@@ -63,8 +62,9 @@ if prompt := st.chat_input("Escribe tu orden..."):
             if chunk.choices[0].delta.content is not None:
                 full_response += chunk.choices[0].delta.content
         
-        # Guardamos la respuesta
         st.session_state.messages.append({"role": "assistant", "content": full_response})
-        
-        # Dex habla
         speak(full_response)
+
+# Si viene audio, procesamos
+if audio_data and audio_data.get('text'):
+    procesar_orden(audio_data['text'])
