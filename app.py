@@ -1,5 +1,4 @@
 import streamlit as st
-from gtts import gTTS
 import json
 import os
 
@@ -10,48 +9,42 @@ ARCHIVO_MEMORIA = "memoria_dex.json"
 if not os.path.exists(ARCHIVO_MEMORIA):
     with open(ARCHIVO_MEMORIA, "w") as f: json.dump({"creador": "David Lopez"}, f)
 
-# --- 2. MOTOR DE RESPUESTA ---
-def hablar(texto):
-    tts = gTTS(text=texto, lang='es')
-    tts.save("saludo.mp3")
-    st.session_state.hablando = True
+st.set_page_config(page_title="Dex", layout="centered")
 
+# --- 2. LÓGICA DE RESPUESTA ---
+def obtener_respuesta(prompt):
+    with open(ARCHIVO_MEMORIA, "r") as f: memoria = json.load(f)
+    if "cómo te llamas" in prompt.lower(): return "Soy Dex."
+    if "quién te creó" in prompt.lower(): return f"Mi Arquitecto es {memoria['creador']}."
+    return f"He recibido tu orden, {prompt}."
+
+# --- 3. INTERFAZ Y VOZ NATIVA ---
+# Esfera que cambia de color cuando recibe texto
+color = "#00FF7F" if "respuesta" in st.session_state else "#FFD700"
+st.markdown(f"""
+<div style="display: flex; justify-content: center; margin-top: 50px;">
+    <img src="{IMAGEN_BASE64}" style="width: 350px; height: 350px; border-radius: 50%; border: 8px solid {color}; box-shadow: 0 0 50px {color}; transition: all 0.5s;">
+</div>
+""", unsafe_allow_html=True)
+
+# JavaScript para hablar usando la voz nativa del sistema
+if "respuesta" in st.session_state:
+    texto = st.session_state.respuesta
+    js_code = f"""
+    <script>
+        var msg = new SpeechSynthesisUtterance("{texto}");
+        msg.lang = 'es-ES';
+        window.speechSynthesis.speak(msg);
+    </script>
+    """
+    st.components.v1.html(js_code, height=0)
+    del st.session_state.respuesta
+
+# Entrada invisible que ejecuta la voz
 def procesar():
     prompt = st.session_state.input_dex
     if prompt:
-        with open(ARCHIVO_MEMORIA, "r") as f: memoria = json.load(f)
-        if "cómo te llamas" in prompt.lower(): respuesta = "Soy Dex."
-        elif "quién te creó" in prompt.lower(): respuesta = f"Mi Arquitecto es {memoria['creador']}."
-        else: respuesta = f"Procesando tu orden: {prompt}."
-        
+        st.session_state.respuesta = obtener_respuesta(prompt)
         st.session_state.input_dex = ""
-        hablar(respuesta)
 
-st.set_page_config(page_title="Dex", layout="centered")
-
-if 'hablando' not in st.session_state: st.session_state.hablando = False
-if 'activado' not in st.session_state: st.session_state.activado = False
-
-# --- 3. INTERFAZ ---
-st.markdown("<h1 style='text-align: center; color: #FFD700;'>Centro de Mando: Dex</h1>", unsafe_allow_html=True)
-
-# Botón de autorización obligatoria
-if not st.session_state.activado:
-    if st.button("ACTIVAR CANAL DE VOZ"):
-        st.session_state.activado = True
-        st.rerun()
-else:
-    # Esfera
-    color = "#00FF7F" if st.session_state.hablando else "#FFD700"
-    st.markdown(f"""
-    <div style="display: flex; justify-content: center; margin-top: 30px;">
-        <img src="{IMAGEN_BASE64}" style="width: 350px; height: 350px; border-radius: 50%; border: 8px solid {color}; box-shadow: 0 0 50px {color}; transition: all 0.5s;">
-    </div>
-    """, unsafe_allow_html=True)
-
-    if st.session_state.hablando:
-        # Reproducción forzada tras activación
-        st.markdown('<audio src="saludo.mp3" autoplay="true"></audio>', unsafe_allow_html=True)
-        st.session_state.hablando = False
-
-    st.text_input("Comando:", key="input_dex", on_change=procesar, label_visibility="collapsed", placeholder="Escribe y presiona ENTER...")
+st.text_input("Comando:", key="input_dex", on_change=procesar, label_visibility="collapsed")
