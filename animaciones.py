@@ -1,21 +1,22 @@
 def obtener_css_animacion():
     return """
     <style>
-        /* Animación de pulso para el Centro de Mando */
+        /* Pulso imponente y brillante */
         .pulso {
-            width: 10px;
-            height: 10px;
+            width: 25px; 
+            height: 25px;
             background: #00ffcc;
             border-radius: 50%;
-            box-shadow: 0 0 10px #00ffcc;
+            box-shadow: 0 0 20px #00ffcc, 0 0 40px #00ffcc; /* Halo brillante */
             animation: pulse-animation 2s infinite;
             display: inline-block;
-            margin-right: 10px;
+            margin-right: 15px;
+            margin-top: 10px;
         }
         @keyframes pulse-animation {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 204, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 255, 204, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 204, 0); }
+            0% { transform: scale(1); box-shadow: 0 0 10px #00ffcc; }
+            50% { transform: scale(1.5); box-shadow: 0 0 30px #00ffcc; }
+            100% { transform: scale(1); box-shadow: 0 0 10px #00ffcc; }
         }
     </style>
     """
