@@ -2,14 +2,20 @@ import streamlit as st
 from groq import Groq
 import os
 
-# Lógica de voz ajustada para sonar menos robótica
+# Configuración de voz "suave" y profesional
 def speak(text):
+    # Ajustes: rate 0.85 (más lento), pitch 0.9 (más profundo/cálido)
     js_code = f"""
     <script>
         var msg = new SpeechSynthesisUtterance("{text.replace('"', '').replace(chr(10), ' ')}");
+        var voices = window.speechSynthesis.getVoices();
+        // Intentamos buscar una voz femenina en español si existe
+        var femaleVoice = voices.find(v => v.lang.includes('es') && v.name.toLowerCase().includes('female'));
+        if (femaleVoice) msg.voice = femaleVoice;
+        
         msg.lang = 'es-ES';
-        msg.pitch = 0.8;
-        msg.rate = 0.95;
+        msg.pitch = 0.9; 
+        msg.rate = 0.85; 
         window.speechSynthesis.speak(msg);
     </script>
     """
@@ -23,11 +29,6 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 st.title("Centro de Mando: Dex")
-
-for message in st.session_state.messages:
-    if message["role"] != "system":
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
 
 if prompt := st.chat_input("Escribe tu orden..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -48,6 +49,7 @@ if prompt := st.chat_input("Escribe tu orden..."):
                 placeholder.markdown(full_response + "▌")
         placeholder.markdown(full_response)
         
+        # Inyectamos la voz suave
         speak(full_response)
     
     st.session_state.messages.append({"role": "assistant", "content": full_response})
