@@ -25,7 +25,7 @@ if not st.session_state.autenticado:
             st.error("Acceso denegado.")
     st.stop()
 
-# --- 2. PANEL Y ANIMACIÓN FORZADA ---
+# --- 2. PANEL Y ANIMACIÓN ---
 st.success(f"Sistema vinculado: {st.session_state.nombre}")
 
 st.markdown("""
@@ -47,22 +47,14 @@ st.markdown("""
 ahora = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
 
 if prompt := st.chat_input(f"¿Qué orden tienes para mí, {st.session_state.nombre}?"):
-    # Inyectamos el JS de movimiento directo
-    st.components.v1.html("""
-    <script>
-        var sphere = window.parent.document.getElementById('dex-sphere');
-        if (sphere) { sphere.classList.add('animar'); }
-    </script>
-    """, height=0)
-
     if "abre" in prompt.lower():
         try:
             requests.get(URL_MACRODROID, timeout=5)
-            res = "Ejecutando comando."
+            res = "Ejecutando comando, David."
         except:
             res = "Error de conexión."
     else:
-        instruccion = f"Eres Dex, creado por {st.session_state.nombre}. Hoy es {ahora}. Responde breve y al punto."
+        instruccion = f"Eres Dex, creado por {st.session_state.nombre}. Hoy es {ahora}. Responde como un asistente leal."
         client = Groq(api_key=st.secrets.get("GROQ_API_KEY"))
         response = client.chat.completions.create(
             messages=[{"role": "system", "content": instruccion}, {"role": "user", "content": prompt}], 
@@ -71,15 +63,20 @@ if prompt := st.chat_input(f"¿Qué orden tienes para mí, {st.session_state.nom
         res = response.choices[0].message.content
         st.write(f"Dex: {res}")
 
-    # --- 4. VOZ Y APAGADO DE ANIMACIÓN ---
+    # --- 4. VOZ Y ANIMACIÓN SINCRONIZADA ---
     st.components.v1.html(f"""
     <script>
+        var sphere = window.parent.document.getElementById('dex-sphere');
         var msg = new SpeechSynthesisUtterance("{res.replace('"', '')}");
         msg.lang = 'es-ES';
-        msg.onend = function() {{ 
-            var sphere = window.parent.document.getElementById('dex-sphere');
-            if (sphere) {{ sphere.classList.remove('animar'); }}
+        
+        msg.onstart = function() {{ 
+            if (sphere) {{ sphere.classList.add('animar'); }} 
         }};
+        msg.onend = function() {{ 
+            if (sphere) {{ sphere.classList.remove('animar'); }} 
+        }};
+        
         window.speechSynthesis.speak(msg);
     </script>
     """, height=0)
