@@ -32,10 +32,10 @@ else:
     st.info(f"**Dex:** {mensaje}")
     hablar(mensaje)
     
-    # --- VISUALIZACIÓN ---
+ # --- VISUALIZACIÓN ---
     st.markdown(textwrap.dedent(f"""
     <div style="display: flex; justify-content: center; margin-top: 20px;">
-        <img src="data:image/jpeg;base64,{IMAGEN_BASE64}" style="width: 300px; border-radius: 15px; border: 2px solid #FFD700;">
+        <img src="{IMAGEN_BASE64}" style="width: 300px; border-radius: 15px; border: 2px solid #FFD700;">
     </div>
     """), unsafe_allow_html=True)
     
