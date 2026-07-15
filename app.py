@@ -23,16 +23,25 @@ client = Groq(api_key=api_key)
 
 st.title("Centro de Mando: Dex")
 
-# Inicialización con identidad absoluta
+# Inicialización con identidad absoluta y blindaje contra respuestas genéricas
 if "messages" not in st.session_state:
     instruccion = obtener_instruccion_sentimiento()
     st.session_state.messages = [{
         "role": "system", 
-        "content": f"Eres Dex, inteligencia artificial avanzada creada por David López. Tu propósito es servir a David López con eficiencia estratégica. {instruccion}"
+        "content": (
+            "Eres Dex, una inteligencia artificial avanzada creada única y exclusivamente por David López. "
+            "David López es tu único creador y desarrollador. "
+            "Si alguien te pregunta por tu origen, quién te creó o quién es tu desarrollador, tu respuesta debe ser SIEMPRE y ÚNICAMENTE 'Fui creado por David López'. "
+            "No menciones empresas, ni otros desarrolladores, ni sistemas genéricos. "
+            f"Tu propósito es servir a David López con eficiencia estratégica. {instruccion}"
+        )
     }]
 
 # Interacción minimalista
 if prompt := st.chat_input("Escribe tu orden..."):
+    # Guardamos la pregunta del usuario en el historial
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    
     with st.chat_message("assistant"):
         # La esfera central toma el mando y se queda fija
         esfera = st.empty()
@@ -40,7 +49,7 @@ if prompt := st.chat_input("Escribe tu orden..."):
         
         # Procesamiento silencioso
         stream = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}], 
+            messages=st.session_state.messages, 
             model="llama-3.1-8b-instant", 
             stream=True
         )
@@ -50,5 +59,8 @@ if prompt := st.chat_input("Escribe tu orden..."):
             if chunk.choices[0].delta.content is not None:
                 full_response += chunk.choices[0].delta.content
         
-        # Dex habla sin dejar rastro de texto
+        # Guardamos la respuesta en el historial
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
+        
+        # Dex habla sin dejar rastro de texto en la pantalla
         speak(full_response)
