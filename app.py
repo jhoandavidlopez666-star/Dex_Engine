@@ -4,7 +4,7 @@ from cerebro_emocional import obtener_instruccion_sentimiento
 from estilos import obtener_estilo_visual
 from animaciones import obtener_css_animacion
 
-# Inyectamos estilos y animaciones
+# Inyectar estilos y animaciones
 st.markdown(obtener_estilo_visual(), unsafe_allow_html=True)
 st.markdown(obtener_css_animacion(), unsafe_allow_html=True)
 
@@ -21,7 +21,7 @@ def speak(text):
     """
     st.components.v1.html(js_code, height=0)
 
-# Motor Dex
+# Configuración
 api_key = st.secrets.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
@@ -31,21 +31,22 @@ if "messages" not in st.session_state:
     instruccion = obtener_instruccion_sentimiento()
     st.session_state.messages = [{"role": "system", "content": f"Eres Dex. {instruccion}"}]
 
-# Mostrar historial
+# Mostrar historial con estilo de consola
 for message in st.session_state.messages:
     if message["role"] != "system":
         with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+            st.markdown(f"```text\n{message['content']}\n```")
 
 # Lógica del Chat
 if prompt := st.chat_input("Escribe tu orden..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
-        st.markdown(prompt)
+        st.markdown(f"```text\n{prompt}\n```")
 
     with st.chat_message("assistant"):
-        # Mostramos la esfera central y LA DEJAMOS AHÍ
-        st.markdown('<div class="esfera-contenedor"><div class="esfera"></div></div>', unsafe_allow_html=True)
+        # Mostramos la esfera central
+        esfera_placeholder = st.empty()
+        esfera_placeholder.markdown('<div class="esfera-contenedor"><div class="esfera"></div></div>', unsafe_allow_html=True)
         
         # Procesamiento
         stream = client.chat.completions.create(
@@ -60,10 +61,12 @@ if prompt := st.chat_input("Escribe tu orden..."):
         for chunk in stream:
             if chunk.choices[0].delta.content is not None:
                 full_response += chunk.choices[0].delta.content
-                response_placeholder.markdown(full_response + "▌")
+                # Mostramos el texto como si fuera una terminal escribiendo
+                response_placeholder.markdown(f"```text\n{full_response}▌\n```")
         
-        # Al terminar, solo actualizamos el texto, la esfera se queda fija
-        response_placeholder.markdown(full_response)
+        # Al terminar, fijamos el bloque de consola
+        response_placeholder.markdown(f"```text\n{full_response}\n```")
+        
         speak(full_response)
     
     st.session_state.messages.append({"role": "assistant", "content": full_response})
