@@ -11,7 +11,6 @@ st.markdown(obtener_estilo_visual(), unsafe_allow_html=True)
 st.markdown(obtener_css_animacion(), unsafe_allow_html=True)
 autenticador.verificar_patron_vocal()
 
-# Motor de voz
 def speak(text):
     js_code = f"""<script>
         var msg = new SpeechSynthesisUtterance("{text.replace('"', '').replace(chr(10), ' ')}");
@@ -20,37 +19,36 @@ def speak(text):
     </script>"""
     st.components.v1.html(js_code, height=0)
 
-client = Groq(api_key=st.secrets.get("GROQ_API_KEY"))
-
 st.title("Centro de Mando: Dex")
 
-# --- MANDO POR VOZ MEJORADO ---
+# --- ZONA DE PROCESAMIENTO (LA ESFERA) ---
+contenedor_esfera = st.empty()
+contenedor_esfera.markdown('<div class="esfera-contenedor"><div class="esfera"></div></div>', unsafe_allow_html=True)
+
+# --- ZONA DE MANDO (MICRÓFONO) ---
 audio_data = mic_recorder(
     start_prompt="🎙️ ACTIVAR COMANDO",
     stop_prompt="🛑 PROCESAR AHORA",
     key='dex_mic'
 )
 
-# Historial
+# Inicialización
 if "messages" not in st.session_state:
     instruccion = obtener_instruccion_sentimiento()
-    st.session_state.messages = [{
-        "role": "system", 
-        "content": f"Eres Dex, inteligencia artificial creada por David López. Tu único creador es David López. {instruccion}"
-    }]
+    st.session_state.messages = [{"role": "system", "content": f"Eres Dex, creado por David López. {instruccion}"}]
 
-# Procesamiento de audio
+# Lógica
 if audio_data and audio_data.get('text'):
     user_text = audio_data['text']
-    st.session_state.messages.append({"role": "user", "content": user_text})
+    client = Groq(api_key=st.secrets.get("GROQ_API_KEY"))
     
-    with st.spinner("Dex analizando..."):
+    with st.spinner("Dex procesando..."):
         stream = client.chat.completions.create(
-            messages=st.session_state.messages, 
+            messages=st.session_state.messages + [{"role": "user", "content": user_text}], 
             model="llama-3.1-8b-instant", 
             stream=True
         )
         full_response = "".join([chunk.choices[0].delta.content for chunk in stream if chunk.choices[0].delta.content])
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
+        
         speak(full_response)
-        st.rerun() # Esto limpia el estado y vuelve a mostrar el botón correctamente
+        st.rerun()
