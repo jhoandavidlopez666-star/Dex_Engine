@@ -25,60 +25,61 @@ if not st.session_state.autenticado:
             st.error("Acceso denegado.")
     st.stop()
 
-# --- 2. PANEL Y DINAMISMO ---
-st.success(f"Acceso Autorizado: {st.session_state.nombre}")
+# --- 2. PANEL Y ANIMACIÓN FORZADA ---
+st.success(f"Sistema vinculado: {st.session_state.nombre}")
 
-# CSS con animación de movimiento para la esfera
 st.markdown("""
 <style>
-.esfera {
+.esfera-base {
     width: 250px; height: 250px;
     background: radial-gradient(circle, #ffd700, #000);
     border-radius: 50%; margin: 50px auto;
     box-shadow: 0 0 60px #ffd700;
-    transition: transform 0.5s;
+    transition: transform 0.2s;
 }
-.hablando { animation: pulse 1s infinite; }
-@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+@keyframes latido { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+.animar { animation: latido 0.8s infinite; }
 </style>
-<div id="esfera" class="esfera"></div>
+<div id="dex-sphere" class="esfera-base"></div>
 """, unsafe_allow_html=True)
 
 # --- 3. LÓGICA DE MANDO ---
-# Obtenemos hora y fecha real
 ahora = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
 
 if prompt := st.chat_input(f"¿Qué orden tienes para mí, {st.session_state.nombre}?"):
-    # Activamos la animación de la esfera
-    st.components.v1.html("<script>document.getElementById('esfera').className = 'esfera hablando';</script>", height=0)
-    
+    # Inyectamos el JS de movimiento directo
+    st.components.v1.html("""
+    <script>
+        var sphere = window.parent.document.getElementById('dex-sphere');
+        if (sphere) { sphere.classList.add('animar'); }
+    </script>
+    """, height=0)
+
     if "abre" in prompt.lower():
         try:
             requests.get(URL_MACRODROID, timeout=5)
-            res = f"Ejecutando comando, {st.session_state.nombre}."
+            res = "Ejecutando comando."
         except:
-            res = "Falla de conexión."
+            res = "Error de conexión."
     else:
-        # Le damos consciencia de tiempo en la instrucción
-        instruccion = f"Eres Dex, creado por {st.session_state.nombre}. Hoy es {ahora}. Si te preguntan la hora o el día, usa esta referencia exacta: {ahora}."
-        
+        instruccion = f"Eres Dex, creado por {st.session_state.nombre}. Hoy es {ahora}. Responde breve y al punto."
         client = Groq(api_key=st.secrets.get("GROQ_API_KEY"))
         response = client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": instruccion},
-                {"role": "user", "content": prompt}
-            ], 
+            messages=[{"role": "system", "content": instruccion}, {"role": "user", "content": prompt}], 
             model="llama-3.1-8b-instant"
         )
         res = response.choices[0].message.content
         st.write(f"Dex: {res}")
 
-    # --- 4. VOZ Y PARADA DE ANIMACIÓN ---
+    # --- 4. VOZ Y APAGADO DE ANIMACIÓN ---
     st.components.v1.html(f"""
     <script>
         var msg = new SpeechSynthesisUtterance("{res.replace('"', '')}");
         msg.lang = 'es-ES';
-        msg.onend = function() {{ document.getElementById('esfera').className = 'esfera'; }};
+        msg.onend = function() {{ 
+            var sphere = window.parent.document.getElementById('dex-sphere');
+            if (sphere) {{ sphere.classList.remove('animar'); }}
+        }};
         window.speechSynthesis.speak(msg);
     </script>
     """, height=0)
