@@ -23,10 +23,18 @@ client = Groq(api_key=api_key)
 
 st.title("Centro de Mando: Dex")
 
+# Inicialización con identidad absoluta
+if "messages" not in st.session_state:
+    instruccion = obtener_instruccion_sentimiento()
+    st.session_state.messages = [{
+        "role": "system", 
+        "content": f"Eres Dex, inteligencia artificial avanzada creada por David López. Tu propósito es servir a David López con eficiencia estratégica. {instruccion}"
+    }]
+
 # Interacción minimalista
 if prompt := st.chat_input("Escribe tu orden..."):
     with st.chat_message("assistant"):
-        # La esfera central toma el mando
+        # La esfera central toma el mando y se queda fija
         esfera = st.empty()
         esfera.markdown('<div class="esfera-contenedor"><div class="esfera"></div></div>', unsafe_allow_html=True)
         
@@ -42,7 +50,5 @@ if prompt := st.chat_input("Escribe tu orden..."):
             if chunk.choices[0].delta.content is not None:
                 full_response += chunk.choices[0].delta.content
         
-        # Dex habla sin dejar rastro de texto en la pantalla
+        # Dex habla sin dejar rastro de texto
         speak(full_response)
-        
-        # La esfera permanece activa
