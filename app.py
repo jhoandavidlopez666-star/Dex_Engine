@@ -4,11 +4,11 @@ from cerebro_emocional import obtener_instruccion_sentimiento
 from estilos import obtener_estilo_visual
 from animaciones import obtener_css_animacion
 
-# Inyectamos estilos y animaciones
+# Inyectar estilos y la animación de la esfera
 st.markdown(obtener_estilo_visual(), unsafe_allow_html=True)
 st.markdown(obtener_css_animacion(), unsafe_allow_html=True)
 
-# Configuración de voz
+# Motor de voz
 def speak(text):
     js_code = f"""
     <script>
@@ -21,13 +21,12 @@ def speak(text):
     """
     st.components.v1.html(js_code, height=0)
 
-# Motor Dex
+# Configuración de Dex
 api_key = st.secrets.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
 st.title("Centro de Mando: Dex")
 
-# Inicialización
 if "messages" not in st.session_state:
     instruccion = obtener_instruccion_sentimiento()
     st.session_state.messages = [{"role": "system", "content": f"Eres Dex. {instruccion}"}]
@@ -38,17 +37,18 @@ for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-# Lógica del chat
+# Lógica del Chat con Esfera Central
 if prompt := st.chat_input("Escribe tu orden..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        # Contenedor estable para el círculo y estado
-        status_container = st.empty()
-        status_container.markdown('<div class="pulso"></div> **Dex procesando información...**', unsafe_allow_html=True)
+        # Mostramos la esfera central de procesamiento
+        esfera_placeholder = st.empty()
+        esfera_placeholder.markdown('<div class="esfera-contenedor"><div class="esfera"></div></div>', unsafe_allow_html=True)
         
+        # Procesamiento
         stream = client.chat.completions.create(
             messages=st.session_state.messages,
             model="llama-3.1-8b-instant",
@@ -61,14 +61,14 @@ if prompt := st.chat_input("Escribe tu orden..."):
         for chunk in stream:
             if chunk.choices[0].delta.content is not None:
                 full_response += chunk.choices[0].delta.content
-                # Mantenemos el texto fluyendo abajo
+                # Texto fluyendo mientras la esfera brilla en el centro
                 response_placeholder.markdown(full_response + "▌")
         
-        # Al terminar, quitamos el círculo y mostramos el texto final
-        status_container.empty()
+        # Al terminar, quitamos la esfera y dejamos el texto final
+        esfera_placeholder.empty()
         response_placeholder.markdown(full_response)
         
-        # Activamos la voz
+        # Dex habla
         speak(full_response)
     
     st.session_state.messages.append({"role": "assistant", "content": full_response})
