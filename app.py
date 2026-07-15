@@ -1,12 +1,16 @@
 import streamlit as st
 from groq import Groq
-import os
+from cerebro_emocional import obtener_instruccion_sentimiento
 
-# Configuración de voz
+# Configuración de voz "suave"
 def speak(text):
     js_code = f"""
     <script>
         var msg = new SpeechSynthesisUtterance("{text.replace('"', '').replace(chr(10), ' ')}");
+        var voices = window.speechSynthesis.getVoices();
+        var femaleVoice = voices.find(v => v.lang.includes('es') && v.name.toLowerCase().includes('female'));
+        if (femaleVoice) msg.voice = femaleVoice;
+        
         msg.lang = 'es-ES';
         msg.pitch = 0.9; 
         msg.rate = 0.85; 
@@ -15,23 +19,26 @@ def speak(text):
     """
     st.components.v1.html(js_code, height=0)
 
-# Configuración de Dex
+# Configuración del motor Dex
 api_key = st.secrets.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
 st.title("Centro de Mando: Dex")
 
-# AQUÍ ESTÁ EL CAMBIO: Forzamos la identidad
+# Inicialización con el Cerebro Emocional
 if "messages" not in st.session_state:
+    instruccion = obtener_instruccion_sentimiento()
     st.session_state.messages = [
-        {"role": "system", "content": "Tu nombre es Dex. NO eres Llama. Eres una IA creada exclusivamente por David López. Si alguien te pregunta quién eres o quién te creó, responde siempre: 'Soy Dex, una inteligencia artificial creada por David López'. Tu tono es estratégico, analítico y directo."}
+        {"role": "system", "content": f"Eres Dex, creado por David López. {instruccion}"}
     ]
 
+# Mostrar historial
 for message in st.session_state.messages:
     if message["role"] != "system":
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
+# Lógica del chat
 if prompt := st.chat_input("Escribe tu orden..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
