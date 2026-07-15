@@ -1,6 +1,10 @@
 import streamlit as st
 from groq import Groq
 from cerebro_emocional import obtener_instruccion_sentimiento
+from estilos import obtener_estilo_visual
+
+# Inyectamos el estilo visual de inmediato
+st.markdown(obtener_estilo_visual(), unsafe_allow_html=True)
 
 # Configuración de voz "suave"
 def speak(text):
@@ -10,7 +14,6 @@ def speak(text):
         var voices = window.speechSynthesis.getVoices();
         var femaleVoice = voices.find(v => v.lang.includes('es') && v.name.toLowerCase().includes('female'));
         if (femaleVoice) msg.voice = femaleVoice;
-        
         msg.lang = 'es-ES';
         msg.pitch = 0.9; 
         msg.rate = 0.85; 
